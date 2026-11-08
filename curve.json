@@ -1,0 +1,75 @@
+{
+  "painting": {
+    "artist": "Şeker Ahmed Paşa",
+    "title": "Kavunlu Natürmort",
+    "collection": "Sakıp Sabancı Museum"
+  },
+  "coordinates": "normalised painting coordinates: (0,0) = bottom-left, (1,1) = top-right",
+  "curveType": "piecewise cubic Bezier",
+  "segments": 3,
+  "continuity": "C1: handles mirrored about every interior knot (P[k+1] = 2 P[k] - P[k-1])",
+  "layout": "knots at indices 0, 3, 6, ...; segment i uses controlPoints[3i .. 3i+3]",
+  "controlPoints": [
+    {
+      "i": 0,
+      "x": 0.2722,
+      "y": 0.745,
+      "role": "knot"
+    },
+    {
+      "i": 1,
+      "x": 0.3083,
+      "y": 0.8765,
+      "role": "handle"
+    },
+    {
+      "i": 2,
+      "x": 0.4306,
+      "y": 0.9004,
+      "role": "handle"
+    },
+    {
+      "i": 3,
+      "x": 0.5556,
+      "y": 0.8924,
+      "role": "knot"
+    },
+    {
+      "i": 4,
+      "x": 0.6806,
+      "y": 0.8845,
+      "role": "handle"
+    },
+    {
+      "i": 5,
+      "x": 0.8125,
+      "y": 0.8367,
+      "role": "handle"
+    },
+    {
+      "i": 6,
+      "x": 0.8583,
+      "y": 0.7211,
+      "role": "knot"
+    },
+    {
+      "i": 7,
+      "x": 0.9042,
+      "y": 0.6056,
+      "role": "handle"
+    },
+    {
+      "i": 8,
+      "x": 0.9,
+      "y": 0.5299,
+      "role": "handle"
+    },
+    {
+      "i": 9,
+      "x": 0.875,
+      "y": 0.4582,
+      "role": "knot"
+    }
+  ],
+  "exportedAt": "default trace (re-export your own from the app)"
+}
