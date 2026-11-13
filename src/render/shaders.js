@@ -1,6 +1,6 @@
 // WGSL shaders. Every draw has its own 256-byte slot in one uniform buffer,
 // selected with a dynamic offset:
-//   mvp    = P · V · M   (computed on the CPU with the student's mat4 code)
+//   mvp    = P · V · M   (computed on the CPU with src/math/mat4.js)
 //   model  = M           (normals; the scene only uses uniform scales on lit
 //                         objects that matter, so the upper 3×3 is good enough)
 //   color  = base colour (linear)

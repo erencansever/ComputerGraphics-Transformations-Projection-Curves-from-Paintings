@@ -1,6 +1,6 @@
 # Report outline (3–5 pages, PDF)
 
-Write the text, derivations and measurements yourself. The application gives you the evidence: screenshots and on-screen read-outs.
+The application gives you the evidence: screenshots and on-screen read-outs.
 
 ## 1. Painting
 - Şeker Ahmed Paşa, *Kavunlu Natürmort*, Sakıp Sabancı Museum. Say why you chose it (strong organic contours for curve tracing; a table edge that gives a perspective cue).

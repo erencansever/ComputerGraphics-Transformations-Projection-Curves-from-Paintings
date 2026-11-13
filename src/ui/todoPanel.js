@@ -1,4 +1,4 @@
-// Checks which student functions are still TODO and lists them on screen.
+// Checks which maths functions are still TODO and lists them on screen.
 import * as M from '../math/mat4.js';
 import * as Cam from '../math/camera.js';
 import * as Crv from '../math/curves.js';
@@ -53,7 +53,7 @@ export function renderTodo(app) {
   if (box.dataset.sig === JSON.stringify([g, app.fatal])) { box.style.display = 'block'; return; }
   box.dataset.sig = JSON.stringify([g, app.fatal]);
   box.innerHTML =
-    `<h3>Student maths still to write</h3>` +
+    `<h3>Maths still to write</h3>` +
     (app.fatal ? `<p>${app.fatal}. The scene appears as soon as Part A and Part C are done.</p>` : '') +
     g.map(([t, m]) => `<b>${t}</b><ul>${m.map((f) => `<li><code>${f}</code></li>`).join('')}</ul>`).join('') +
     `<p>Run <code>npm test</code> to check them. This box disappears once Parts A, C and D are done.</p>`;

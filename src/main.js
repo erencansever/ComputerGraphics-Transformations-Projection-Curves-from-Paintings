@@ -1,6 +1,6 @@
 // CS405 Project 1 — one WebGPU application for parts A–E.
 //
-//   math/    student maths (mat4, camera, curves, quaternions) + vec3 helpers
+//   math/    maths (mat4, camera, curves, quaternions) + vec3 helpers
 //   scene/   scene-graph node, the scene itself, meshes, the curve model
 //   render/  WebGPU device, pipelines, shaders, compute ribbon
 //   ui/      panel, HUD, orbit camera, mouse picking

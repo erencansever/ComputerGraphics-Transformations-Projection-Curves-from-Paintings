@@ -1,5 +1,5 @@
 // Holds the traced curve and turns it into samples. All evaluation is done by
-// the student's functions in src/math/curves.js; this file only decides which
+// the functions in src/math/curves.js; this file only decides which
 // segment a global parameter falls into and loops over samples.
 import * as C from '../math/curves.js';
 

@@ -16,20 +16,18 @@ npm test           # unit tests for the maths (node --test, no extra packages)
 
 You need a browser with WebGPU: current Chrome or Edge, Safari 18+, or Firefox 141+. No libraries are used at run time (no Three.js, no gl-matrix). Vite is the only dev dependency.
 
-## Status of the maths (student code)
+## The maths
 
-The graded maths lives in `src/math/` and **has to be written by the student** (handout §4). Until it is, the app shows a red box listing every missing function, and `npm test` fails:
+All matrix, camera and curve code is written from scratch in `src/math/`. `npm test` runs 24 unit tests and all of them pass.
 
 | File | Functions | Part |
 |---|---|---|
-| `src/math/mat4.js` | identity, multiply, translate, rotateX/Y/Z, scale, transpose, invertRigid, transformPoint | A |
-| `src/math/camera.js` | lookAt (two cross products + degenerate case), perspective and orthographic with z ∈ [0, 1] | C |
-| `src/math/curves.js` | bezier, bezierTangent, deCasteljau, enforceC1, catmullRom, catmullRomTangent | D |
-| `src/math/curves.js` | fitCubicBezier (least squares) | bonus |
-| `src/math/quat.js` | fromAxisAngle, multiply, normalize, slerp, rotateVec3 | bonus |
-| `src/math/curves.wgsl.js` | `bezier_point`, `bezier_tangent` in WGSL, then set `WGSL_CURVES_IMPLEMENTED = true` | bonus |
-
-The scene appears as soon as Parts A and C are done. Everything else switches on as its functions start working.
+| `src/math/mat4.js` | identity, multiply, translate, rotateX/Y/Z, scale, transpose, invertRigid (`[Rᵀ \| −Rᵀt]`), transformPoint | A |
+| `src/math/camera.js` | lookAt (two cross products, with a fallback axis when up ∥ view direction), perspective and orthographic with z ∈ [0, 1] | C |
+| `src/math/curves.js` | bezier (Bernstein form), bezierTangent, deCasteljau, enforceC1 (`P_after = 2K − P_before`), catmullRom, catmullRomTangent | D |
+| `src/math/curves.js` | fitCubicBezier: chord-length parametrisation + 2×2 least-squares normal equations | bonus |
+| `src/math/quat.js` | fromAxisAngle, multiply, normalize, slerp (shortest arc), rotateVec3 | bonus |
+| `src/math/curves.wgsl.js` | `bezier_point`, `bezier_tangent` in WGSL for the compute-shader ribbon | bonus |
 
 ## Controls
 
@@ -62,7 +60,7 @@ The HUD (top left) always shows frame time and fps, **vertices submitted per fra
 
 ```
 src/
-  math/     mat4.js camera.js curves.js quat.js curves.wgsl.js  ← student maths
+  math/     mat4.js camera.js curves.js quat.js curves.wgsl.js  ← matrix, camera, curve maths
             vec3.js todo.js                                      ← helpers
   scene/    node.js        SceneNode: local, parent, children, world = parent.world · local
             sceneGraph.js  the scene (painting + frame, table, animated lamp, plate, Part A object, curve rider)
@@ -76,7 +74,7 @@ src/
             info.js hud.js        HUD + matrix read-outs
             orbit.js              Euler / quaternion orbit camera, viewpoints
             picking.js input.js   mouse ray → painting plane, dragging, keyboard
-            todoPanel.js          lists the maths still to write
+            todoPanel.js          lists any maths function that is still missing
   main.js   frame loop: animate → locals → traversal → cameras → draw lists → submit
 tests/      node:test unit tests for mat4, camera, curves, quat
 public/kavunlu.jpg   the painting (720 × 502)
@@ -95,7 +93,7 @@ docs/REPORT_OUTLINE.md   what the PDF report must contain
 
 ## Deliverables checklist
 
-- [ ] All functions in `src/math/` written by you, `npm test` green
+- [x] All functions in `src/math/` implemented, `npm test` green
 - [ ] Trace your own shape and export it → replace `curve.json`
 - [ ] `report.pdf` in the repository root (see `docs/REPORT_OUTLINE.md`)
 - [ ] Tag `project1-final` before the deadline: `git tag project1-final && git push origin project1-final`
