@@ -21,19 +21,35 @@ export class Renderer {
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('No WebGPU adapter found.');
     const device = await adapter.requestDevice();
-    return new Renderer(canvas, adapter, device);
+    // Preferred path: render into an sRGB *view* of the swap-chain texture so
+    // the hardware encodes linear shader output. If the browser rejects that
+    // view (or ?srgb=manual is in the URL), configure the plain format and let
+    // the fragment shaders encode sRGB themselves (override MANUAL_SRGB).
+    const ctx = canvas.getContext('webgpu');
+    const format = navigator.gpu.getPreferredCanvasFormat();
+    let srgbView = new URLSearchParams(location.search).get('srgb') !== 'manual';
+    if (srgbView) {
+      device.pushErrorScope('validation');
+      try {
+        ctx.configure({ device, format, viewFormats: [format + '-srgb'], alphaMode: 'opaque' });
+        ctx.getCurrentTexture().createView({ format: format + '-srgb' });
+      } catch {
+        srgbView = false;
+      }
+      if (await device.popErrorScope()) srgbView = false;
+    }
+    return new Renderer(canvas, adapter, device, srgbView);
   }
 
-  constructor(canvas, adapter, device) {
+  constructor(canvas, adapter, device, srgbView = true) {
     this.canvas = canvas;
     this.device = device;
     this.adapterInfo = adapter.info || {};
     this.ctx = canvas.getContext('webgpu');
     this.format = navigator.gpu.getPreferredCanvasFormat();
-    // Render into an sRGB *view* of the swap-chain texture: shaders output
-    // linear colour and the hardware encodes it, matching the srgb texture.
-    this.viewFormat = this.format + '-srgb';
-    this.ctx.configure({ device, format: this.format, viewFormats: [this.viewFormat], alphaMode: 'opaque' });
+    this.srgbView = srgbView;
+    this.viewFormat = srgbView ? this.format + '-srgb' : this.format;
+    this.ctx.configure({ device, format: this.format, viewFormats: srgbView ? [this.viewFormat] : [], alphaMode: 'opaque' });
     this.meshes = {}; // name → { buf, count }
     this.stats = { vertices: 0, draws: 0 };
     this.staging = new Float32Array(MAX_DRAWS * SLOT_FLOATS);
@@ -66,6 +82,7 @@ export class Renderer {
     this.sampler = d.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
 
     const target = [{ format: this.viewFormat }];
+    const constants = { MANUAL_SRGB: this.srgbView ? 0 : 1 };
     const depth = (cmp, write = true) => ({ format: 'depth24plus', depthWriteEnabled: write, depthCompare: cmp });
     const meshModule = d.createShaderModule({ code: MESH_WGSL });
     const colorModule = d.createShaderModule({ code: COLOR_WGSL });
@@ -84,7 +101,7 @@ export class Renderer {
             { shaderLocation: 2, offset: 24, format: 'float32x2' },
           ] }],
         },
-        fragment: { module: meshModule, entryPoint: 'fs', targets: target },
+        fragment: { module: meshModule, entryPoint: 'fs', targets: target, constants },
         primitive: { topology: 'triangle-list', cullMode: 'none' },
         depthStencil: depth('less'),
       }),
@@ -97,7 +114,7 @@ export class Renderer {
       this.pipelines[name] = d.createRenderPipeline({
         layout: colorPL,
         vertex: { module: colorModule, entryPoint: 'vs', buffers: colorBuffers },
-        fragment: { module: colorModule, entryPoint: 'fs', targets: target },
+        fragment: { module: colorModule, entryPoint: 'fs', targets: target, constants },
         primitive: { topology, cullMode: 'none' },
         depthStencil: depth('less-equal'),
       });
@@ -108,7 +125,7 @@ export class Renderer {
         { shaderLocation: 0, offset: 0, format: 'float32x4' },
         { shaderLocation: 1, offset: 16, format: 'float32x4' },
       ] }] },
-      fragment: { module: ribbonModule, entryPoint: 'fs', targets: target },
+      fragment: { module: ribbonModule, entryPoint: 'fs', targets: target, constants },
       primitive: { topology: 'triangle-strip', cullMode: 'none' },
       depthStencil: depth('less-equal'),
     });

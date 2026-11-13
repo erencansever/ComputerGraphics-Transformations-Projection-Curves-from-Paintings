@@ -13,6 +13,17 @@ struct U {
   params: vec4f,
 };
 @group(0) @binding(0) var<uniform> u: U;
+
+// true when the canvas has no sRGB view: encode linear → sRGB by hand.
+override MANUAL_SRGB: bool = false;
+fn encode(c: vec3f) -> vec4f {
+  if (MANUAL_SRGB) {
+    let lo = c * 12.92;
+    let hi = 1.055 * pow(max(c, vec3f(0.0)), vec3f(1.0 / 2.4)) - 0.055;
+    return vec4f(select(hi, lo, c <= vec3f(0.0031308)), 1.0);
+  }
+  return vec4f(c, 1.0);
+}
 `;
 
 export const MESH_WGSL = /* wgsl */ `
@@ -41,7 +52,7 @@ struct VSOut {
   let L = normalize(vec3f(0.35, 0.85, 0.55));
   let d = abs(dot(normalize(i.n), L));           // two-sided
   let lit = base * (0.28 + 0.72 * d);
-  return vec4f(select(lit, base, u.params.y > 0.5), 1.0);
+  return encode(select(lit, base, u.params.y > 0.5));
 }
 `;
 
@@ -57,7 +68,7 @@ struct VSOut { @builtin(position) pos: vec4f, @location(0) c: vec3f };
   return o;
 }
 
-@fragment fn fs(i: VSOut) -> @location(0) vec4f { return vec4f(i.c, 1.0); }
+@fragment fn fs(i: VSOut) -> @location(0) vec4f { return encode(i.c); }
 `;
 
 // Ribbon written by the compute shader: vec4 position + vec4 colour.
@@ -72,5 +83,5 @@ struct VSOut { @builtin(position) pos: vec4f, @location(0) c: vec3f };
   return o;
 }
 
-@fragment fn fs(i: VSOut) -> @location(0) vec4f { return vec4f(i.c, 1.0); }
+@fragment fn fs(i: VSOut) -> @location(0) vec4f { return encode(i.c); }
 `;

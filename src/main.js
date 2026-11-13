@@ -150,9 +150,9 @@ function buildGridAndAxes() {
   }
   if (st.debug.axes) {
     scene.root.traverse((node) => {
-      if (node === scene.root || node.name.startsWith('frame-') || !node.visible) return;
+      if (!node.visible) return;
       const o = M.transformPoint(node.world, [0, 0, 0]);
-      const L = node.name === 'table' || node.name === 'painting' ? 0.6 : 0.3;
+      const L = node === scene.root || node.name === 'table' || node.name === 'painting' ? 0.6 : node.name.startsWith('frame-') ? 0.2 : 0.3;
       line(o, M.transformPoint(node.world, [L, 0, 0]), COL.x);
       line(o, M.transformPoint(node.world, [0, L, 0]), COL.y);
       line(o, M.transformPoint(node.world, [0, 0, L]), COL.z);
@@ -423,7 +423,13 @@ app.startPlacing = () => {
 
 app.finishPlacing = () => {
   const pts = app.curve.points;
-  if (pts.length < 4) {
+  if (pts.length > 0 && pts.length < 10) {
+    // the handout asks for at least three segments (3·3 + 1 = 10 points)
+    app.placeHint = `need at least 10 points for 3 segments (have ${pts.length})`;
+    return;
+  }
+  app.placeHint = '';
+  if (pts.length === 0) {
     app.curve.points = app.placeBackup || app.curve.points;
   } else {
     pts.length = 3 * Math.floor((pts.length - 1) / 3) + 1;

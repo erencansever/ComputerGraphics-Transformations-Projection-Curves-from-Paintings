@@ -70,7 +70,7 @@ export function buildPanel(root, app) {
     ['Reset curve', () => { app.placeMode = false; app.curve.reset(); }],
     ['Export JSON', () => app.exportJSON()],
   ]);
-  ui.note(s, 'Round = knot, square = handle. Dragging a handle mirrors the one across the joint (C¹). Placing: click on the painting, 3n+1 points (10 → 3 segments).');
+  ui.note(s, 'Round = knot, square = handle. Dragging a handle mirrors the one across the joint (C¹). Placing: click on the painting, at least 10 points (3 segments); extra points are trimmed to 3n+1. Finishing with no points restores the previous curve.');
 
   // ---- bonus --------------------------------------------------------------
   s = ui.section('Bonus');

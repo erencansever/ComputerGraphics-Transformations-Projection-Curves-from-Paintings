@@ -88,7 +88,7 @@ docs/REPORT_OUTLINE.md   what the PDF report must contain
 - Model matrices: `M = T·R·S` (scale first, then rotate, then translate) everywhere except where the Part A switch selects `S·R·T`.
 - World: right-handed, y up. The painting lies in the plane z = 0, centred at (0, 1.6, 0), 4 × 2.79 units. The table top is y = 0.
 - View space: the camera looks down −z. Clip space is WebGPU's: z ∈ [0, 1]. Depth is cleared to 1 and compared with `less`.
-- Colour: the painting is an `rgba8unorm-srgb` texture, and the shaders render into an `-srgb` view of the canvas, so lighting is done in linear space.
+- Colour: the painting is an `rgba8unorm-srgb` texture and lighting is done in linear space. The output is encoded by an `-srgb` view of the canvas; if a browser does not offer that view, the fragment shaders encode sRGB themselves (the HUD shows which path is active, and `?srgb=manual` forces the fallback).
 - Curve coordinates: normalised painting coordinates, (0, 0) at bottom-left and (1, 1) at top-right.
 
 ## Deliverables checklist
@@ -96,5 +96,5 @@ docs/REPORT_OUTLINE.md   what the PDF report must contain
 - [x] All functions in `src/math/` implemented, `npm test` green
 - [ ] Trace your own shape and export it → replace `curve.json`
 - [ ] `report.pdf` in the repository root (see `docs/REPORT_OUTLINE.md`)
-- [ ] Tag `project1-final` before the deadline: `git tag project1-final && git push origin project1-final`
+- [x] Tag `project1-final`
 - [ ] Optional: demo video (≤ 3 min)

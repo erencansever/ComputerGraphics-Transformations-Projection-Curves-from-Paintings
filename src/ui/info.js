@@ -21,7 +21,8 @@ export function renderHud(app) {
     const fl = Math.hypot(...f), dotUp = Math.abs((f[0] * c.up[0] + f[1] * c.up[1] + f[2] * c.up[2]) / (fl * Math.hypot(...c.up)));
     if (dotUp > 0.9999) s += '⚠ up ∥ view direction — lookAt must use a fallback axis\n';
   }
-  if (app.placeMode) s += `PLACING: ${app.curve.points.length} points (need 3n+1, ≥10)\n`;
+  if (app.placeMode) s += `PLACING: ${app.curve.points.length} points (need 3n+1, ≥10)${app.placeHint ? ' — ' + app.placeHint : ''}\n`;
+  s += `colour: ${r.srgbView ? 'sRGB view of the canvas' : 'manual sRGB encode in shader'}\n`;
   if (app.free.error) s += `fit: ${app.free.error}\n`;
   const errs = [...app.errors].filter((e) => !e.startsWith('quat.'));
   if (errs.length) s += `skipped: ${errs.join(', ')}\n`;
