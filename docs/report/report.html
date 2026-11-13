@@ -204,12 +204,24 @@
 }</pre>
 
 <h2>Appendix B · Use of AI tools</h2>
-<p>As required by section 4 of the handout, this is a complete list of the AI tools I used.</p>
+<p>As required by section 4 of the handout, this is a complete list of the AI tools I used. I used one tool, <b>Claude Code (Anthropic)</b> in the Claude desktop app, for every step below. The handout's own explorer page and the course's starter assets were the only other sources.</p>
 <table>
-<tr><th>Tool</th><th>What I asked for</th><th>What I kept</th></tr>
-<tr><td>Claude Code (Anthropic), in the Claude desktop app</td>
-<td>To build the project from the handout and the course’s explorer page: the WebGPU renderer, scene graph, UI, picking and curve editing, the unit tests and README, and later, after the deadline had passed, the matrix, camera and curve functions in <span class="m">src/math/</span> and the bonus features. I also asked it to check the result against every requirement, to rewrite the code comments in my own voice and to draft this report from screenshots and measurements taken in the running app.</td>
-<td>All of the generated code and the report draft, unchanged.</td></tr>
+<tr><th>Step</th><th>What I asked for</th><th>What I kept</th></tr>
+<tr><td>Repository setup</td>
+<td>Cloning my empty GitHub repository, setting up the Vite project (<span class="m">package.json</span>, <span class="m">.gitignore</span>, folder layout <span class="m">math/ scene/ render/ ui/</span>) and extracting the painting from the explorer page into <span class="m">public/kavunlu.jpg</span>.</td>
+<td>All of it.</td></tr>
+<tr><td>Application code</td>
+<td>The WebGPU renderer and shaders, scene graph, UI panel and HUD, mouse picking and curve editing, the compute-shader ribbon, the unit tests and the README. After the deadline had passed: the matrix, camera and curve functions in <span class="m">src/math/</span> and the remaining bonus maths (least-squares fit, quaternions, WGSL Bézier).</td>
+<td>All of the generated code, unchanged.</td></tr>
+<tr><td>Checking</td>
+<td>Running the tests and the app in a browser, finding and fixing the bugs listed in section 8, and going through the handout requirement by requirement (which led to the three fixes described there).</td>
+<td>All fixes.</td></tr>
+<tr><td>Comments and report</td>
+<td>Rewriting the code comments in my own voice and drafting this report from screenshots and measurements taken in the running app on my machine.</td>
+<td>The report draft and comments, unchanged.</td></tr>
+<tr><td>Git: commits, pushes, tag</td>
+<td>Every commit and push to GitHub, made under my name. This includes rewriting the first commit and force-pushing it to remove the AI co-author line from the commit message, rebasing onto a README edit I made on GitHub, retrying pushes that failed on the network, and creating and later moving the <span class="m">project1-final</span> tag.</td>
+<td>All of it.</td></tr>
 </table>
 </div>
 
