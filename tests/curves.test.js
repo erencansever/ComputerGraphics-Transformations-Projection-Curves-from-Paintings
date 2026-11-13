@@ -74,7 +74,7 @@ test('BONUS fitCubicBezier recovers a Bézier from its samples', (t) => {
       }
       worst = Math.max(worst, best);
     }
-    // one chord-length pass gets within ~0.06 here; reparametrising gets closer
+    // my single chord-length pass gets within ~0.06 here; reparametrising would get closer
     assert.ok(worst < 0.1, `max distance ${worst}`);
   });
 });

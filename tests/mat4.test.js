@@ -23,7 +23,7 @@ test('multiply: identity, associativity of translations, order matters', () => {
   nearArr(Array.from(M.multiply(M.identity(), A)), Array.from(A));
   nearArr(Array.from(M.multiply(A, M.identity())), Array.from(A));
   nearArr(Array.from(M.multiply(M.translate(1, 2, 3), M.translate(4, 5, 6))), Array.from(M.translate(5, 7, 9)));
-  // T·R applies R first: origin goes to t. R·T rotates t.
+  // T·R applies R first, so the origin goes to t; with R·T the translation itself gets rotated.
   const TR = M.multiply(M.translate(1, 0, 0), M.rotateZ(H));
   const RT = M.multiply(M.rotateZ(H), M.translate(1, 0, 0));
   nearArr(mulVec4(TR, [0, 0, 0, 1]), [1, 0, 0, 1]);

@@ -1,6 +1,7 @@
-// Mouse and keyboard. Left-drag on a control point edits the curve; left-drag
-// elsewhere orbits; Shift-drag on the painting records a freehand stroke
-// (bonus fit); wheel zooms. Clicks in "place" mode add control points.
+// My mouse and keyboard handling. Left-drag on a control point edits the curve,
+// left-drag anywhere else orbits, Shift-drag on the painting records a freehand
+// stroke for the bonus fit, and the wheel zooms. In "place" mode a click adds
+// a control point.
 import * as Crv from '../math/curves.js';
 import { TodoError } from '../math/todo.js';
 import { cameraRay, hitPainting, paintToWorld } from './picking.js';
@@ -13,7 +14,7 @@ export function attachInput(canvas, app) {
 
   const inRect = (r, x, y) => r && x >= r[0] && y >= r[1] && x < r[0] + r[2] && y < r[1] + r[3];
 
-  /** Painting hit for a pointer event, or null when not over the main view. */
+  /** Where the pointer hits the painting (normalised coords), or null if it isn't over the main view. */
   function pick(e) {
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (canvas.width / rect.width), y = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -79,7 +80,7 @@ export function attachInput(canvas, app) {
       const pts = app.curve.points, i = app.drag.index;
       const du = u - pts[i][0], dv = v - pts[i][1];
       if (i % 3 === 0) {
-        // a knot carries its two handles with it (keeps the joint's tangent)
+        // when I drag a knot its two handles come along, so the joint keeps its tangent
         for (const j of [i - 1, i + 1]) if (pts[j] && j % 3) { pts[j][0] += du; pts[j][1] += dv; }
       }
       pts[i][0] = u; pts[i][1] = v;

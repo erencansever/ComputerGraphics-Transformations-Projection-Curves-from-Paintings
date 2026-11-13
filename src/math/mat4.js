@@ -1,17 +1,18 @@
 /**
- * Part A — 4×4 matrix library.
+ * Part A — my 4×4 matrix library.
  *
- * Conventions used by the whole application:
+ * Conventions I stick to everywhere in the project:
  *   • A matrix is a Float32Array(16) in COLUMN-MAJOR order:
  *       element (row r, column c)  ==  m[c * 4 + r]
- *     so the translation of an affine matrix lives in m[12], m[13], m[14].
- *     This is exactly the layout WGSL's mat4x4f expects in a uniform buffer.
- *   • Column vectors:  p' = M · p.   multiply(A, B) means A·B (B is applied first).
- *   • Right-handed world, y up. Angles in radians.
- *   • Model matrices are composed as M = T · R · S unless the UI switch says S·R·T.
+ *     so the translation of an affine matrix ends up in m[12], m[13], m[14].
+ *     I picked this layout because it is exactly what WGSL's mat4x4f expects,
+ *     so I can upload my matrices to the uniform buffer without transposing.
+ *   • Column vectors:  p' = M · p.  multiply(A, B) is A·B, so B acts first.
+ *   • Right-handed world, y up, angles in radians.
+ *   • I build model matrices as M = T · R · S (only the Part A switch uses S·R·T).
  */
 
-/** @returns {Float32Array} the 4×4 identity. */
+/** The 4×4 identity: ones on the diagonal (indices 0, 5, 10, 15). */
 export function identity() {
   const m = new Float32Array(16);
   m[0] = m[5] = m[10] = m[15] = 1;
@@ -19,9 +20,9 @@ export function identity() {
 }
 
 /**
- * @returns {Float32Array} the product a · b (a and b are not modified).
- * (a·b)[r][c] = Σ_k a[r][k] · b[k][c]; with column-major storage
- * a[r][k] = a[k*4 + r] and b[k][c] = b[c*4 + k].
+ * Returns a · b without touching a or b.
+ * The usual (a·b)[r][c] = Σ_k a[r][k] · b[k][c]; the only thing to get right
+ * is the indexing, since a[r][k] lives at a[k*4 + r] in column-major order.
  */
 export function multiply(a, b) {
   const o = new Float32Array(16);
@@ -35,7 +36,7 @@ export function multiply(a, b) {
   return o;
 }
 
-/** @returns {Float32Array} translation by (tx, ty, tz) — the 4th column. */
+/** Translation by (tx, ty, tz): identity with t in the 4th column. */
 export function translate(tx, ty, tz) {
   const m = identity();
   m[12] = tx;
@@ -45,9 +46,9 @@ export function translate(tx, ty, tz) {
 }
 
 /**
- * Right-handed rotation of `rad` about +x (y → z).
+ * Rotation by `rad` about +x (right-handed, so y turns towards z).
  *   | 1  0   0 |
- *   | 0  c  −s |      columns: (1,0,0), (0,c,s), (0,−s,c)
+ *   | 0  c  −s |      I fill it column by column: (1,0,0), (0,c,s), (0,−s,c)
  *   | 0  s   c |
  */
 export function rotateX(rad) {
@@ -59,10 +60,12 @@ export function rotateX(rad) {
 }
 
 /**
- * Right-handed rotation of `rad` about +y (z → x).
+ * Rotation by `rad` about +y (z turns towards x).
  *   |  c  0  s |
  *   |  0  1  0 |      columns: (c,0,−s), (0,1,0), (s,0,c)
  *   | −s  0  c |
+ * Note the minus sign sits in the bottom-left here, not top-right like for
+ * x and z, because the cyclic order is z → x (the "Ry: z→x" test checks it).
  */
 export function rotateY(rad) {
   const c = Math.cos(rad), s = Math.sin(rad);
@@ -73,7 +76,7 @@ export function rotateY(rad) {
 }
 
 /**
- * Right-handed rotation of `rad` about +z (x → y).
+ * Rotation by `rad` about +z (x turns towards y).
  *   | c  −s  0 |
  *   | s   c  0 |      columns: (c,s,0), (−s,c,0), (0,0,1)
  *   | 0   0  1 |
@@ -86,7 +89,7 @@ export function rotateZ(rad) {
   return m;
 }
 
-/** @returns {Float32Array} non-uniform scale (the diagonal). */
+/** Non-uniform scale: just the diagonal. */
 export function scale(sx, sy, sz) {
   const m = identity();
   m[0] = sx;
@@ -95,7 +98,7 @@ export function scale(sx, sy, sz) {
   return m;
 }
 
-/** @returns {Float32Array} the transpose of m (row r ↔ column r). */
+/** Transpose: swap row r with column r. */
 export function transpose(m) {
   const o = new Float32Array(16);
   for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) o[r * 4 + c] = m[c * 4 + r];
@@ -103,24 +106,26 @@ export function transpose(m) {
 }
 
 /**
- * Inverse of a RIGID transform  A = [R | t]  (rotation + translation, no scale).
- * Since R is orthonormal, R⁻¹ = Rᵀ, and A·p = R·p + t inverts to
+ * Inverse of a RIGID transform A = [R | t] (rotation + translation, no scale).
+ * The handout says not to write a general inverse, and it isn't needed:
+ * R is orthonormal, so R⁻¹ = Rᵀ, and from p' = R·p + t I get
  *     p = Rᵀ·(p' − t) = Rᵀ·p' − Rᵀ·t      ⇒   A⁻¹ = [Rᵀ | −Rᵀ·t]
- * No general 4×4 inverse needed.
+ * I use this to turn the camera's view matrix back into camera-to-world when
+ * I draw the frustum.
  */
 export function invertRigid(m) {
   const o = identity();
-  // Rᵀ: element (r, c) of the result is element (c, r) of m
+  // upper-left 3×3 becomes Rᵀ
   for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++) o[c * 4 + r] = m[r * 4 + c];
-  // −Rᵀ·t
+  // new translation = −Rᵀ·t (o already holds Rᵀ, so I can multiply with it)
   const tx = m[12], ty = m[13], tz = m[14];
   for (let r = 0; r < 3; r++) o[12 + r] = -(o[r] * tx + o[4 + r] * ty + o[8 + r] * tz);
   return o;
 }
 
 /**
- * Applies m to the point p = [x, y, z] (w = 1) and returns [x', y', z'],
- * divided by w' when w' ≠ 1 (so it also works after a projection).
+ * Applies m to the point [x, y, z] with w = 1. If the result has w ≠ 1
+ * (after a projection) I divide by w, so the same helper works for both.
  */
 export function transformPoint(m, p) {
   const [x, y, z] = p;

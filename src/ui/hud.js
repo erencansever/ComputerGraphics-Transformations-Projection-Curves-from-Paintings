@@ -1,6 +1,6 @@
-// Helpers for the text read-outs (stats, camera parameters, matrices).
+// Helpers I use for the text read-outs (stats, camera parameters, matrices).
 
-/** Formats a column-major 4×4 as four printed ROWS. */
+/** Prints a column-major 4×4 as four ROWS, so it reads like the matrices in my notes. */
 export function fmtMat(m, w = 7, dp = 2) {
   if (!m) return '  (not available)';
   let s = '';
@@ -17,7 +17,7 @@ export function fmtMat(m, w = 7, dp = 2) {
 
 export const fmtV = (v, dp = 2) => (v ? `(${v.map((x) => x.toFixed(dp)).join(', ')})` : '—');
 
-/** Two matrices side by side with titles. */
+/** Two matrices side by side; I use it to show T·R·S next to S·R·T. */
 export function sideBySide(a, b, titleA, titleB) {
   const A = fmtMat(a).trimEnd().split('\n'), B = fmtMat(b).trimEnd().split('\n');
   const pad = Math.max(...A.map((l) => l.length), titleA.length) + 3;

@@ -21,10 +21,10 @@ export class Renderer {
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('No WebGPU adapter found.');
     const device = await adapter.requestDevice();
-    // Preferred path: render into an sRGB *view* of the swap-chain texture so
-    // the hardware encodes linear shader output. If the browser rejects that
-    // view (or ?srgb=manual is in the URL), configure the plain format and let
-    // the fragment shaders encode sRGB themselves (override MANUAL_SRGB).
+    // What I'd like: render into an sRGB *view* of the swap-chain texture, so the
+    // hardware encodes my linear shader output. Not every browser has to offer
+    // that view, so I test it first; if it fails (or ?srgb=manual is in the URL)
+    // I use the plain format and my fragment shaders encode sRGB themselves.
     const ctx = canvas.getContext('webgpu');
     const format = navigator.gpu.getPreferredCanvasFormat();
     let srgbView = new URLSearchParams(location.search).get('srgb') !== 'manual';

@@ -1,12 +1,14 @@
-// CS405 Project 1 — one WebGPU application for parts A–E.
+// CS405 Project 1 — my WebGPU application. Parts A–E all live in this one page,
+// split into folders the way the handout suggests:
 //
-//   math/    maths (mat4, camera, curves, quaternions) + vec3 helpers
+//   math/    my maths (mat4, camera, curves, quaternions) + small vec3 helpers
 //   scene/   scene-graph node, the scene itself, meshes, the curve model
 //   render/  WebGPU device, pipelines, shaders, compute ribbon
 //   ui/      panel, HUD, orbit camera, mouse picking
 //
-// Per frame:  update animation → local matrices → world matrices (traversal)
-//             → V, P for each camera → draw lists → one command buffer.
+// What I do every frame:  update the animation → local matrices → world
+// matrices (tree traversal) → V and P for each camera → draw lists → one
+// command buffer.
 import * as M from './math/mat4.js';
 import * as Cam from './math/camera.js';
 import * as Crv from './math/curves.js';
@@ -84,7 +86,7 @@ function viewports() {
   }
 }
 
-/** Main camera: eye/target/up from the orbit, V = lookAt, P = perspective | orthographic. */
+/** My main camera: eye/target/up come from the orbit, then V = lookAt and P = perspective or orthographic. */
 function mainCamera(aspect) {
   const st = app.st;
   const useQuat = st.useQuat && app.quatOK;
@@ -109,7 +111,7 @@ function inspectionCamera(aspect) {
 }
 
 // ---------------------------------------------------------------------------
-// Overlay geometry (world space, rebuilt every frame)
+// Overlay geometry. I rebuild it in world space every frame; it's small enough that this is cheap.
 function line(a, b, c) { app.lines.v(a, c); app.lines.v(b, c); }
 function tri(a, b, c, col) { app.tris.v(a, col); app.tris.v(b, col); app.tris.v(c, col); }
 function disc(center, r, col, seg = 14) {
@@ -123,7 +125,7 @@ function square(center, r, col) {
   tri([x - r, y - r, z], [x + r, y - r, z], [x + r, y + r, z], col);
   tri([x - r, y - r, z], [x + r, y + r, z], [x - r, y + r, z], col);
 }
-/** Thick polyline in the painting plane (points already in world space). */
+/** WebGPU lines are always 1 px wide, so I draw the curve as a thin strip of triangles in the painting plane instead. */
 function ribbon(world, halfW, col) {
   const n = world.length;
   if (n < 2) return;
@@ -173,18 +175,18 @@ function buildCurveOverlay() {
     return;
   }
 
-  // the curve itself
+  // the curve itself (skipped when the compute shader draws it instead)
   const useGpu = st.curve.gpuRibbon && WGSL_CURVES_IMPLEMENTED && bez;
   if (!useGpu) {
     safe('curve sampling', () => ribbon(curve.sample(48).map(Z(0.01)), 0.018, bez ? COL.curve : COL.curveCR));
   }
 
-  // control polygon
+  // control polygon: dashed in the explorer page, a plain line here
   if (st.debug.polygon && bez) {
     for (let i = 0; i + 1 < pts.length; i++) line(Z(0.014)(pts[i]), Z(0.014)(pts[i + 1]), COL.poly);
   }
 
-  // de Casteljau for the active segment at the global parameter t
+  // de Casteljau levels for whichever segment the global t currently falls in
   if (st.debug.casteljau && bez && curve.segments > 0) {
     safe('de Casteljau', () => {
       const [i, t] = curve.locate(st.curve.t);
@@ -197,7 +199,7 @@ function buildCurveOverlay() {
     });
   }
 
-  // control points (knots round, handles square)
+  // control points: I draw knots round and handles square, like the explorer page
   if (st.debug.points) {
     pts.forEach((p, i) => {
       const knot = i % 3 === 0;
@@ -209,7 +211,7 @@ function buildCurveOverlay() {
     });
   }
 
-  // freehand trace + least-squares fit (bonus)
+  // bonus: the freehand stroke and the Bézier I fitted to it
   const fr = app.free;
   if (fr.samples.length > 1) for (let i = 0; i + 1 < fr.samples.length; i++) line(Z(0.017)(fr.samples[i]), Z(0.017)(fr.samples[i + 1]), COL.free);
   if (fr.fit && st.curve.showFit) {
@@ -223,7 +225,8 @@ function buildCurveOverlay() {
   }
 }
 
-/** Main camera frustum + its axes, for the inspection view only. */
+/** The main camera's frustum, drawn only in the inspection view. I build the corners in
+ * camera space and map them to the world with invertRigid(V) from Part A. */
 function buildFrustum(cam) {
   const invV = M.invertRigid(cam.V);
   const corners = (d) => {
@@ -253,7 +256,8 @@ function updateCurveRider() {
   safe('curve rider', () => {
     const { p, d } = curve.evalAt(st.curve.t);
     const w = paintToWorld(p, 0.07);
-    // tangent is in normalised coords; scale to world units before atan2
+    // the tangent is in normalised coords, where x and y are stretched differently,
+    // so I scale it to world units before taking atan2
     const ang = Math.atan2(d[1] * PAINT.H, d[0] * PAINT.W);
     rider.local = M.multiply(M.translate(...w), M.rotateZ(ang));
     rider.describe = () => `T(C(t))·R_z(atan2(C'(t)) = ${ang.toFixed(2)})`;
@@ -270,8 +274,8 @@ function updateSweep() {
   safe('surface of revolution', () => {
     const s = curve.sample(32);
     if (s.length < 2) return;
-    // Profile in world units: x along the traced shape (centred), radius =
-    // height above the lower end point of the trace. Swept around x.
+    // I turn the traced curve into a profile in world units: x along the shape
+    // (centred), radius = height above the lower end of the trace. Then I sweep it around x.
     const vAxis = Math.min(s[0][1], s[s.length - 1][1]);
     const xs = s.map((p) => p[0] * PAINT.W), xMid = (Math.min(...xs) + Math.max(...xs)) / 2;
     const prof = s.map(([u, v], i) => [xs[i] - xMid, Math.max(0, (v - vAxis) * PAINT.H)]);
@@ -325,7 +329,7 @@ function tick(dt) {
   updateSweep();
   sc.root.updateWorld();
 
-  // cameras
+  // both cameras for this frame
   const vp = viewports();
   app.views = vp;
   const mainAspect = vp.main ? vp.main[2] / vp.main[3] : vp.inspect[2] / vp.inspect[3];
@@ -333,19 +337,19 @@ function tick(dt) {
   app.cams.main = cam;
   app.cams.inspect = vp.inspect ? inspectionCamera(vp.inspect[2] / vp.inspect[3]) : null;
 
-  // overlays
+  // overlays (the part both views share comes first in the buffers)
   app.lines.clear(); app.tris.clear();
   buildGridAndAxes();
   buildCurveOverlay();
   const shared = { lines: app.lines.count, tris: app.tris.count };
   if (vp.inspect && st.debug.frustum) safe('frustum', () => buildFrustum(cam));
-  // marker for the main camera's eye in the inspection view
+  // a little marker so I can see where the main camera is from the inspection view
   if (vp.inspect) {
     const e = cam.eye, r = 0.08;
     tri([e[0] - r, e[1], e[2]], [e[0] + r, e[1], e[2]], [e[0], e[1] + 2 * r, e[2]], COL.frustum);
     tri([e[0], e[1], e[2] - r], [e[0], e[1], e[2] + r], [e[0], e[1] + 2 * r, e[2]], COL.frustum);
   }
-  // clip-space background + border for the inspection inset
+  // the inset needs its own background and border; I draw them directly in clip space
   const clipStartT = app.tris.count;
   const zb = 0.9999;
   tri([-1, -1, zb], [1, -1, zb], [1, 1, zb], COL.pipBg); tri([-1, -1, zb], [1, 1, zb], [-1, 1, zb], COL.pipBg);
@@ -354,11 +358,11 @@ function tick(dt) {
   line([-q, -q, 0], [q, -q, 0], COL.pipBorder); line([q, -q, 0], [q, q, 0], COL.pipBorder);
   line([q, q, 0], [-q, q, 0], COL.pipBorder); line([-q, q, 0], [-q, -q, 0], COL.pipBorder);
 
-  // GPU ribbon (bonus)
+  // bonus: let the compute shader build the curve ribbon
   const useGpu = st.curve.gpuRibbon && WGSL_CURVES_IMPLEMENTED && app.curve.mode === 'bezier' && !app.placeMode;
   if (useGpu) app.ribbon.update(app.curve.points.map((p) => paintToWorld(p)), app.curve.segments, 0.018, PAINT.z + 0.01, COL.curve);
 
-  // scene draw list (shared by both views; mvp is filled per view by the renderer)
+  // one draw list for the meshes, shared by both views; the renderer fills in the MVP per view
   const meshDraws = [];
   sc.root.traverse((node) => {
     if (!node.mesh || !node.visible) return;
@@ -428,7 +432,7 @@ app.startPlacing = () => {
 app.finishPlacing = () => {
   const pts = app.curve.points;
   if (pts.length > 0 && pts.length < 10) {
-    // the handout asks for at least three segments (3·3 + 1 = 10 points)
+    // the handout asks for at least three segments, and 3 segments need 3·3 + 1 = 10 points
     app.placeHint = `need at least 10 points for 3 segments (have ${pts.length})`;
     return;
   }
