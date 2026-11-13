@@ -1,4 +1,4 @@
-// The control panel (right side). Every Part of the handout has a section.
+// The control panel on the right. I gave every Part of the handout its own section.
 import { Controls, el } from './controls.js';
 import { VIEWPOINTS } from './orbit.js';
 

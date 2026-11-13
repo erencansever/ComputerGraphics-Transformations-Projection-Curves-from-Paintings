@@ -1,6 +1,6 @@
-// Mouse → ray → painting plane. Uses the same eye/target/up/fov as the view
-// matrix, but builds the ray directly from the camera basis (no matrix
-// inverse needed).
+// Mouse → ray → painting plane. I use the same eye/target/up/fov as the view
+// matrix, but build the ray straight from the camera basis, so I don't need a
+// general matrix inverse for picking.
 import { add, sub, scale, cross, normalize, length } from '../math/vec3.js';
 import { PAINT } from '../scene/sceneGraph.js';
 

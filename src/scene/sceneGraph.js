@@ -1,4 +1,4 @@
-// Builds the scene that sits in front of the painting and animates it.
+// Builds my scene in front of the painting and animates it. The tree:
 //
 //  root
 //  ├─ painting            T(0, 1.6, 0)              (textured quad, shape = S(W, H, 1))

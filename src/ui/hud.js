@@ -1,4 +1,4 @@
-// Text read-outs: stats, camera parameters, matrices.
+// Helpers for the text read-outs (stats, camera parameters, matrices).
 
 /** Formats a column-major 4×4 as four printed ROWS. */
 export function fmtMat(m, w = 7, dp = 2) {

@@ -1,5 +1,6 @@
-// Marks functions that still have to be written. The app catches TodoError,
-// lists the missing functions on screen and keeps running whatever it can.
+// I started every maths function as a stub that throws TodoError, so the app
+// could already run and simply list on screen what I still had to write.
+// I kept it because it is still handy when I add new functions.
 export const missing = new Set();
 
 export class TodoError extends Error {

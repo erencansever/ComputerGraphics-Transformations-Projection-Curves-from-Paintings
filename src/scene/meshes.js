@@ -1,5 +1,6 @@
-// Procedural meshes. Vertex layout (8 floats, 32 bytes):
+// My procedural meshes. Vertex layout (8 floats, 32 bytes):
 //   position.xyz, normal.xyz, uv.xy        — non-indexed triangle lists.
+// I went with non-indexed lists because it kept the renderer simpler.
 
 function push(out, p, n, uv) {
   out.push(p[0], p[1], p[2], n[0], n[1], n[2], uv[0], uv[1]);

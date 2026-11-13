@@ -1,5 +1,6 @@
-// Tiny DOM control kit (no UI library needed). Every control reads/writes a
-// property of a state object; sync() pushes state back into the inputs.
+// A tiny DOM control kit I wrote instead of pulling in a UI library. Every
+// control reads/writes one property of a state object; sync() pushes the
+// state back into the inputs (needed after "Reset scene").
 export function el(tag, attrs = {}, parent = null) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {

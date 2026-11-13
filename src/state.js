@@ -1,4 +1,4 @@
-// All tweakable application state in one place. "Reset scene" restores this.
+// All the state I can tweak from the UI, in one place. "Reset scene" copies this back.
 export const DEFAULTS = {
   viewMode: 'pip', // 'main' | 'inspect' | 'pip' | 'split'
   proj: 'persp', // 'persp' | 'ortho'

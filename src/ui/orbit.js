@@ -1,9 +1,10 @@
-// Mouse orbit camera around a target, with two parametrisations:
-//   • Euler (yaw, pitch) — eye on a sphere, up = world +y. Pitch is clamped
-//     unless "allow ±90°" is on, which lets you hit the lookAt degenerate case.
+// My mouse orbit camera around a target, with two parametrisations:
+//   • Euler (yaw, pitch) — the eye moves on a sphere, up = world +y. I clamp
+//     the pitch unless "allow ±90°" is on, which I added to test the lookAt
+//     degenerate case on purpose.
 //   • Quaternion (bonus) — orientation q = R_y(yaw) ⊗ R_x(−pitch);
 //     eye = target + q·(0,0,dist), up = q·(0,1,0). Moving between viewpoints
-//     uses slerp, so the camera turns along the shortest great-circle arc.
+//     uses slerp, so the camera turns along the shortest arc.
 import * as Q from '../math/quat.js';
 import { add, scale } from '../math/vec3.js';
 
@@ -12,9 +13,9 @@ const smooth = (t) => t * t * (3 - 2 * t);
 
 export const VIEWPOINTS = {
   front: { label: 'Front', yaw: 0, pitch: 0.12, dist: 7.5, target: [0, 1.3, 0.8] },
-  // Eye roughly at the painter's eye level, slightly above the table, centred
-  // on the painting: the vanishing direction of the painted table top and the
-  // 3D table line up (tune and justify in the report).
+  // Eye roughly at the painter's eye level, a bit above the table and centred
+  // on the painting, so the painted table top and my 3D table line up.
+  // I tuned these by eye (argued in the report).
   painting: { label: 'Painting match', yaw: 0, pitch: 0.06, dist: 5.4, target: [0, 1.45, 0], fovDeg: 34 },
   left: { label: 'Left', yaw: -1.0, pitch: 0.35, dist: 7, target: [0, 1.0, 0.9] },
   top: { label: 'Top', yaw: 0.0, pitch: 1.45, dist: 8, target: [0, 0.4, 1.3] },

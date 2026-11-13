@@ -1,4 +1,5 @@
-// Checks which maths functions are still TODO and lists them on screen.
+// Checks which of my maths functions still throw TodoError and lists them on
+// screen. Since everything is implemented now, the box stays hidden.
 import * as M from '../math/mat4.js';
 import * as Cam from '../math/camera.js';
 import * as Crv from '../math/curves.js';

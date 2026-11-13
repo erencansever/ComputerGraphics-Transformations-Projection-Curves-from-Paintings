@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CS405 Project 1 Report</title>
+<style>
+  @page { size: A4; margin: 11mm 12mm 11mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font: 9pt/1.34 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 2px; }
+  h2 { font-size: 11pt; margin: 9px 0 3px; padding-bottom: 2px; border-bottom: 1.2px solid #b4441c; color: #7a2e12; break-after: avoid; }
+  h3 { font-size: 10pt; margin: 8px 0 2px; break-after: avoid; }
+  p { margin: 3px 0 5px; text-align: justify; hyphens: auto; }
+  .meta { color: #555; font-size: 9pt; margin-bottom: 6px; }
+  .meta a { color: #1f5f8b; }
+  code, .m { font-family: Menlo, Consolas, monospace; font-size: 8.4pt; }
+  pre { font: 7.1pt/1.28 Menlo, Consolas, monospace; background: #f6f4ef; border: 1px solid #e3ded3; padding: 5px 7px; margin: 4px 0; white-space: pre-wrap; break-inside: avoid; }
+  .eq { font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif; font-size: 10.5pt; text-align: center; margin: 4px 0; }
+  figure { margin: 4px 0 6px; break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid #ccc; display: block; max-height: 62mm; object-fit: cover; }
+  figcaption { font-size: 8.2pt; color: #444; margin-top: 2px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .side { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; align-items: start; }
+  table { border-collapse: collapse; width: 100%; font-size: 8.6pt; margin: 4px 0; break-inside: avoid; }
+  th, td { border: 1px solid #d5d0c5; padding: 2px 5px; text-align: left; }
+  th { background: #f1ede4; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  ul { margin: 2px 0 5px 16px; padding: 0; }
+  li { margin: 1px 0; }
+  .appendix { break-before: page; }
+  .small { font-size: 8.4pt; }
+</style>
+</head>
+<body>
+
+<h1>CS405 Project 1 — Transformations, Projection &amp; Curves from Paintings</h1>
+<div class="meta">
+  [Name Surname] · [Student ID] · Fall 2026<br>
+  Repository: <a href="https://github.com/erencansever/ComputerGraphics-Transformations-Projection-Curves-from-Paintings">github.com/erencansever/ComputerGraphics-Transformations-Projection-Curves-from-Paintings</a> (tag <span class="m">project1-final</span>)<br>
+  Painting: <b>Şeker Ahmed Paşa — <i>Kavunlu Natürmort</i></b> (Still Life with Melon), Sakıp Sabancı Museum
+</div>
+
+<h2>1 · The painting and the scene</h2>
+<div class="side">
+<div>
+<p>I chose <i>Kavunlu Natürmort</i> because it is the clearest example of the "strong organic contours" type in the handout: one big melon whose upper outline is a long, smooth curve, plus a cut slice with a sharp lower edge. That made it a natural fit for Part D, where I trace a piecewise Bézier over the melon. The painting also has a light grey table top that runs away from the viewer, so it still gives me a perspective cue I can use for the camera (Part C and the camera-matching bonus).</p>
+<p>The painting hangs in the scene as a textured quad of 4 × 2.79 units in the plane z = 0, centred at (0, 1.6, 0), inside a wooden frame built from four scaled cubes. In front of it I put a table (top at y = 0), an articulated desk lamp, a plate with an apple and a pear, and the Part A cube. Everything is drawn by one WebGPU application with no libraries; the only dev dependency is Vite. It runs with <span class="m">npm install &amp;&amp; npm run dev</span>, and <span class="m">npm test</span> runs 24 unit tests for the maths (all passing).</p>
+<p><b>Conventions used everywhere.</b> Matrices are <span class="m">Float32Array(16)</span> in column-major order (element (r, c) is <span class="m">m[c·4 + r]</span>), so I upload them to the uniform buffer unchanged. I use column vectors (p′ = M·p), a right-handed world with y up, a camera looking down −z, and WebGPU clip space with z ∈ [0, 1].</p>
+</div>
+<figure><img src="../figures/fig_painting_match.jpg"><figcaption>Fig. 1 — The scene seen from the “Painting match” viewpoint (bonus): eye at the painter’s eye level, fov 34°.</figcaption></figure>
+</div>
+
+<h2>2 · Part A — Transformations</h2>
+<p>My matrix library (<span class="m">src/math/mat4.js</span>) has identity, multiply, translate, rotateX/Y/Z, scale, transpose, transformPoint and the inverse of a rigid transform. For the rigid inverse I use the structure A = [R | t]: since R is orthonormal, R⁻¹ = Rᵀ, and from p′ = Rp + t I get p = Rᵀp′ − Rᵀt, so A⁻¹ = [Rᵀ | −Rᵀt]. That needs no general 4 × 4 inverse. The frustum drawing in Part C uses it to turn the camera’s view matrix back into a camera-to-world matrix.</p>
+<p>The orange cube is the UI-controlled object (translation x/y/z, rotation axis and angle, uniform scale). A switch selects M = T·R·S or M = S·R·T, and the bottom-left panel prints both matrices all the time. The other objects (lamp, plate, apple, pear, frame pieces) are placed with the same functions through the scene graph.</p>
+<div class="two">
+<figure><img src="../figures/fig_a_trs.jpg"><figcaption>Fig. 2 — M = T·R·S with T = (0.6, 0.45, 1.9), R = R<sub>y</sub>(30°), S = 0.6.</figcaption></figure>
+<figure><img src="../figures/fig_a_srt.jpg"><figcaption>Fig. 3 — Same three matrices in the order S·R·T. The cube has moved towards the painting.</figcaption></figure>
+</div>
+<p><b>Why the two orders differ.</b> With column vectors the right-most matrix acts first. In T·R·S the cube is scaled and rotated about its own centre and only then moved, so the last column of M is exactly the translation (0.60, 0.45, 1.90). In S·R·T the cube is moved first, and the rotation and scale then act on that translation too: the translation vector gets rotated by 30° about y and shrunk by 0.6, which ends up at (0.88, 0.27, 0.81), visibly closer to the painting and lower. The upper-left 3 × 3 block (R·S) is identical in both, because a uniform scale commutes with a rotation; only the translation column changes. I use <b>M = T·R·S everywhere else</b> in the project (scene-graph locals are written as T·R and per-node shape scales are applied last), because it lets me think of every object as “shape it at the origin, then put it somewhere”, and translations keep the units I typed into the UI.</p>
+
+<h2>3 · Part B — Scene graph</h2>
+<p>A <span class="m">SceneNode</span> (<span class="m">src/scene/node.js</span>) stores a local matrix, a parent, a list of children and a world matrix. <span class="m">updateWorld()</span> does a depth-first traversal with world(n) = world(parent) · local(n). Each node also has an optional <span class="m">shape</span> matrix that is applied only to its own mesh and is <i>not</i> inherited. Without it, stretching a unit cube into a lamp arm would also stretch the lamp head the arm carries. The tree has 18 nodes and 7 levels (root → table → lamp-base → arm1 → arm2 → head → bulb). Three joints of the lamp and the plate are animated, and the debug toggle draws the local x/y/z axes of every node.</p>
+<div class="side">
+<pre>root
+├─ painting      T(0, 1.6, 0)
+│  └─ frame-top/-bottom/-left/-right  T(…)
+├─ partA-object  T·R·S or S·R·T  (UI)
+├─ table         T(0, −0.05, 1.6)
+│  ├─ lamp-base  T(−1.7, 0.05, −0.7)·R_y(θ0(t))  ←anim
+│  │  └─ lamp-arm1  T(0, 0.05, 0)·R_z(θ1(t))     ←anim
+│  │     └─ lamp-arm2  T(0, 1.0, 0)·R_z(θ2(t))   ←anim
+│  │        └─ lamp-head  T(0, 0.8, 0)·R_z(−2.0)
+│  │           └─ lamp-bulb  T(0.12, 0, 0)  ← leaf
+│  ├─ plate      T(1.6, 0.05, −0.6)·R_y(0.5t)    ←anim
+│  │  ├─ apple   T(0.22, 0.15, 0.05)
+│  │  └─ pear    T(−0.2, 0.14, −0.1)·R_z(π/2)
+│  └─ sweep      surface of revolution (bonus)
+└─ curve-rider   T(C(t))·R_z(atan2 C′(t))</pre>
+<figure><img src="../figures/fig_b_graph.jpg"><figcaption>Fig. 4 — Animation paused with node axes on; the panel lists every local transform and world(lamp-bulb).</figcaption></figure>
+</div>
+<p><b>World matrix of the leaf, checked by hand.</b> In the paused frame of Fig. 4 the joint angles are θ0 = 0.90, θ1 = 0.680, θ2 = −0.533 (the panel rounds them). world(bulb) = M<sub>table</sub>·M<sub>base</sub>·M<sub>arm1</sub>·M<sub>arm2</sub>·M<sub>head</sub>·M<sub>bulb</sub>. I checked it in two parts:</p>
+<ul>
+<li><i>Rotation.</i> After R<sub>y</sub>(θ0) every rotation is about z, and rotations about the same axis add: φ = θ1 + θ2 − 2.00 = −1.852. So R = R<sub>y</sub>(0.90)·R<sub>z</sub>(−1.852). Its first column is R<sub>y</sub>(0.90)·(cos φ, sin φ, 0). With R<sub>y</sub>(θ)·(x, y, z) = (cos θ·x + sin θ·z, y, −sin θ·x + cos θ·z) and (cos φ, sin φ) = (−0.2775, −0.9607), this is (0.6216·(−0.2775), −0.9607, −0.7833·(−0.2775)) = <b>(−0.1725, −0.9607, 0.2174)</b>. Its third column is R<sub>y</sub>(0.90)·(0, 0, 1) = <b>(sin 0.9, 0, cos 0.9) = (0.7833, 0, 0.6216)</b>.</li>
+<li><i>Translation.</i> Walking the chain, the origins are table (0, −0.05, 1.6) → base (−1.7, 0, 0.9) → arm1 (−1.7, 0.05, 0.9) → arm2 (−2.091, 0.827, 1.393) → head (−2.164, 1.619, 1.485). The bulb sits 0.12 along the head’s x axis: (−2.164, 1.619, 1.485) + 0.12·(−0.1725, −0.9607, 0.2174) = <b>(−2.185, 1.504, 1.511)</b>.</li>
+</ul>
+<pre>world(lamp-bulb) printed by the program        by hand
+│ −0.17   0.60   0.78  −2.19 │                  col 0 (−0.1725, −0.9607, 0.2174)
+│ −0.96  −0.28   0.00   1.50 │                  col 2 ( 0.7833,  0,      0.6216)
+│  0.22  −0.75   0.62   1.51 │                  col 3 (−2.185,   1.504,  1.511)
+│  0.00   0.00   0.00   1.00 │                  max difference 1.1·10⁻⁴ (rounding of the angles)</pre>
+
+<h2>4 · Part C — Camera and projection</h2>
+<h3>View matrix (lookAt with two cross products)</h3>
+<p>The camera looks down its −z axis, so its +z axis points from the target back to the eye:</p>
+<div class="eq">w = (eye − target) / ‖eye − target‖,&nbsp;&nbsp;&nbsp; u = (up × w) / ‖up × w‖,&nbsp;&nbsp;&nbsp; v = w × u</div>
+<p>u (right) is the first cross product and v (true up) the second; v is already unit length because w ⊥ u. The camera-to-world matrix is the rigid transform C = [u v w | eye]. The view matrix is its inverse, which by the Part A result is V = [Rᵀ | −Rᵀ·eye]: the rows of V’s rotation are u, v, w and the translation is (−u·eye, −v·eye, −w·eye). The tests check that V maps the eye to the origin and the target to (0, 0, −‖target − eye‖).</p>
+<p><b>Degenerate case.</b> If <i>up</i> is parallel to the view direction (looking straight down), up × w = 0 and normalising it gives NaN. In that case I cross w with whichever world axis is least aligned with it. The “Look straight down” button shows this case: the image in Fig. 7 rotates by an arbitrary amount around the view axis, but no NaN appears and the HUD prints a warning. With the quaternion orbit (bonus) this never happens, because there <i>up</i> is rotated together with the camera.</p>
+<h3>Perspective and orthographic projection for WebGPU</h3>
+<p>For a view-space point (x, y, z) with z &lt; 0 and f = 1 / tan(fovY / 2), I want x<sub>ndc</sub> = (f/aspect)·x / (−z) and y<sub>ndc</sub> = f·y / (−z), so the fourth row of P is (0, 0, −1, 0), giving w<sub>clip</sub> = −z. For depth I need z<sub>ndc</sub> = (A·z + B)/(−z) with z = −n ↦ 0 and z = −f ↦ 1:</p>
+<div class="eq">−A·n + B = 0,&nbsp;&nbsp; (−A·f + B)/f = 1 &nbsp;&nbsp;⇒&nbsp;&nbsp; A = f/(n − f),&nbsp;&nbsp; B = n·f/(n − f)</div>
+<p>OpenGL’s matrix maps depth to [−1, 1]; in WebGPU that would clip away everything in the front half of the depth range, so the depth row has to be different. The orthographic matrix is linear on every axis: x ↦ 2(x − l)/(r − l) − 1 (same for y), and z ↦ (z + n)/(n − f), which sends −n to 0 and −f to 1. The renderer clears depth to 1.0 and uses <span class="m">less</span>.</p>
+<div class="three">
+<figure><img src="../figures/fig_c_persp.jpg"><figcaption>Fig. 5 — Perspective, fov 45°, near 0.1, far 20; V and P printed.</figcaption></figure>
+<figure><img src="../figures/fig_c_ortho.jpg"><figcaption>Fig. 6 — Same camera, orthographic (height 5.2). Parallel table edges stay parallel.</figcaption></figure>
+<figure><img src="../figures/fig_c_degenerate.jpg"><figcaption>Fig. 7 — Up ∥ view direction: the fallback axis keeps V finite.</figcaption></figure>
+</div>
+<div class="side">
+<figure><img src="../figures/fig_c_frustum.jpg"><figcaption>Fig. 8 — Split view. Right: the fixed inspection camera shows the main camera’s frustum (near 1, far 9, fov 40°). The corners are computed in camera space and mapped to the world with invertRigid(V).</figcaption></figure>
+<div>
+<p>The mouse orbits the main camera around its target (wheel = zoom), and the HUD always shows eye, target, up, fov, near and far. The second camera is fixed at (7.5, 6.2, 9.5) looking at the table. It can be shown as an inset, in a split view, or full screen. Each view is its own render pass with its own depth clear.</p>
+<p><b>Near/far and depth precision.</b> I use near = 0.1 and far = 20. The scene is about 6 units deep and the default camera is about 8 units away, so far = 20 leaves room for zooming out. Because z<sub>ndc</sub> is hyperbolic in distance, half of the depth range [0, 0.5] is used up before d = 2nf/(n + f) ≈ 0.2. With a 24-bit depth buffer the smallest depth step at distance d is about Δd ≈ d²(f − n)/(f·n·2²⁴):</p>
+<table>
+<tr><th>near / far</th><th>z<sub>ndc</sub> at d = 5</th><th>Δd at d = 5</th><th>Δd at d = 10</th></tr>
+<tr><td>0.1 / 20 (mine)</td><td class="n">0.985</td><td class="n">1.5·10⁻⁵</td><td class="n">5.9·10⁻⁵</td></tr>
+<tr><td>0.01 / 200</td><td class="n">0.998</td><td class="n">1.5·10⁻⁴</td><td class="n">6.0·10⁻⁴</td></tr>
+<tr><td>1 / 20</td><td class="n">0.842</td><td class="n">1.4·10⁻⁶</td><td class="n">5.7·10⁻⁶</td></tr>
+</table>
+<p>Precision depends mostly on <i>near</i>: dividing near by 10 makes the steps 10× coarser. My curve overlay sits only 0.01 in front of the painting, which is still about 170 depth steps at d = 10 with my values, but it gets close to z-fighting with 0.01 / 200. I did not choose near = 1 because then the camera clips the table when I zoom in.</p>
+</div>
+</div>
+
+<h2>5 · Part D — Curves over the painting</h2>
+<div class="side">
+<div>
+<p><b>Cubic Bézier and its basis.</b> B(t) = Σ<sub>i</sub> B<sub>i</sub>(t)·P<sub>i</sub> with the Bernstein polynomials B₀ = (1−t)³, B₁ = 3(1−t)²t, B₂ = 3(1−t)t², B₃ = t³. They are non-negative on [0, 1] and add up to ((1−t) + t)³ = 1, so the curve stays inside the convex hull of its control points.</p>
+<p><b>Proof that the curve starts at P₀ and ends at P₃.</b> At t = 0: B₀(0) = 1 and B₁(0) = B₂(0) = B₃(0) = 0, because each of them has a factor t. So B(0) = P₀. At t = 1: B₃(1) = 1, and B₀, B₁, B₂ all contain the factor (1 − t), so they are 0. So B(1) = P₃. ∎</p>
+</div>
+<figure><svg viewBox="0 0 360 204" xmlns="http://www.w3.org/2000/svg" style="width:100%;font:9px Helvetica,Arial,sans-serif"><line x1="28" y1="142" x2="332" y2="142" stroke="#333"/><line x1="28" y1="142" x2="28" y2="28" stroke="#333"/><text x="23" y="145" text-anchor="end">0</text><line x1="28" y1="142" x2="332" y2="142" stroke="#ddd"/><text x="23" y="88.0" text-anchor="end">0.5</text><line x1="28" y1="85.0" x2="332" y2="85.0" stroke="#ddd"/><text x="23" y="31" text-anchor="end">1</text><line x1="28" y1="28" x2="332" y2="28" stroke="#ddd"/><text x="28" y="154" text-anchor="middle">0</text><text x="180.0" y="154" text-anchor="middle">0.5</text><text x="332" y="154" text-anchor="middle">1</text><text x="338" y="145">t</text><polyline points="28.0,28.0 31.0,31.4 34.1,34.7 37.1,38.0 40.2,41.1 43.2,44.3 46.2,47.3 49.3,50.3 52.3,53.2 55.4,56.1 58.4,58.9 61.4,61.6 64.5,64.3 67.5,66.9 70.6,69.5 73.6,72.0 76.6,74.4 79.7,76.8 82.7,79.1 85.8,81.4 88.8,83.6 91.8,85.8 94.9,87.9 97.9,90.0 101.0,92.0 104.0,93.9 107.0,95.8 110.1,97.7 113.1,99.4 116.2,101.2 119.2,102.9 122.2,104.5 125.3,106.2 128.3,107.7 131.4,109.2 134.4,110.7 137.4,112.1 140.5,113.5 143.5,114.8 146.6,116.1 149.6,117.4 152.6,118.6 155.7,119.8 158.7,120.9 161.8,122.0 164.8,123.0 167.8,124.0 170.9,125.0 173.9,126.0 177.0,126.9 180.0,127.8 183.0,128.6 186.1,129.4 189.1,130.2 192.2,130.9 195.2,131.6 198.2,132.3 201.3,132.9 204.3,133.6 207.4,134.1 210.4,134.7 213.4,135.2 216.5,135.7 219.5,136.2 222.6,136.7 225.6,137.1 228.6,137.5 231.7,137.9 234.7,138.3 237.8,138.6 240.8,138.9 243.8,139.2 246.9,139.5 249.9,139.8 253.0,140.0 256.0,140.2 259.0,140.4 262.1,140.6 265.1,140.8 268.2,140.9 271.2,141.1 274.2,141.2 277.3,141.3 280.3,141.4 283.4,141.5 286.4,141.6 289.4,141.7 292.5,141.7 295.5,141.8 298.6,141.8 301.6,141.9 304.6,141.9 307.7,141.9 310.7,142.0 313.8,142.0 316.8,142.0 319.8,142.0 322.9,142.0 325.9,142.0 329.0,142.0 332.0,142.0" fill="none" stroke="#b4441c" stroke-width="1.8"/><polyline points="28.0,142.0 31.0,138.6 34.1,135.4 37.1,132.3 40.2,129.4 43.2,126.6 46.2,123.9 49.3,121.3 52.3,118.8 55.4,116.5 58.4,114.3 61.4,112.2 64.5,110.2 67.5,108.3 70.6,106.6 73.6,104.9 76.6,103.4 79.7,101.9 82.7,100.6 85.8,99.4 88.8,98.2 91.8,97.2 94.9,96.2 97.9,95.4 101.0,94.6 104.0,93.9 107.0,93.3 110.1,92.8 113.1,92.4 116.2,92.0 119.2,91.7 122.2,91.5 125.3,91.4 128.3,91.3 131.4,91.3 134.4,91.4 137.4,91.6 140.5,91.8 143.5,92.0 146.6,92.4 149.6,92.8 152.6,93.2 155.7,93.7 158.7,94.2 161.8,94.8 164.8,95.4 167.8,96.1 170.9,96.8 173.9,97.6 177.0,98.4 180.0,99.2 183.0,100.1 186.1,101.0 189.1,102.0 192.2,102.9 195.2,103.9 198.2,104.9 201.3,106.0 204.3,107.0 207.4,108.1 210.4,109.2 213.4,110.3 216.5,111.4 219.5,112.5 222.6,113.6 225.6,114.8 228.6,115.9 231.7,117.0 234.7,118.2 237.8,119.3 240.8,120.5 243.8,121.6 246.9,122.7 249.9,123.8 253.0,124.9 256.0,126.0 259.0,127.0 262.1,128.1 265.1,129.1 268.2,130.1 271.2,131.1 274.2,132.0 277.3,132.9 280.3,133.8 283.4,134.6 286.4,135.5 289.4,136.2 292.5,137.0 295.5,137.7 298.6,138.3 301.6,138.9 304.6,139.5 307.7,140.0 310.7,140.4 313.8,140.8 316.8,141.2 319.8,141.5 322.9,141.7 325.9,141.9 329.0,142.0 332.0,142.0" fill="none" stroke="#1f5f8b" stroke-width="1.8"/><polyline points="28.0,142.0 31.0,142.0 34.1,141.9 37.1,141.7 40.2,141.5 43.2,141.2 46.2,140.8 49.3,140.4 52.3,140.0 55.4,139.5 58.4,138.9 61.4,138.3 64.5,137.7 67.5,137.0 70.6,136.2 73.6,135.5 76.6,134.6 79.7,133.8 82.7,132.9 85.8,132.0 88.8,131.1 91.8,130.1 94.9,129.1 97.9,128.1 101.0,127.0 104.0,126.0 107.0,124.9 110.1,123.8 113.1,122.7 116.2,121.6 119.2,120.5 122.2,119.3 125.3,118.2 128.3,117.0 131.4,115.9 134.4,114.8 137.4,113.6 140.5,112.5 143.5,111.4 146.6,110.3 149.6,109.2 152.6,108.1 155.7,107.0 158.7,106.0 161.8,104.9 164.8,103.9 167.8,102.9 170.9,102.0 173.9,101.0 177.0,100.1 180.0,99.2 183.0,98.4 186.1,97.6 189.1,96.8 192.2,96.1 195.2,95.4 198.2,94.8 201.3,94.2 204.3,93.7 207.4,93.2 210.4,92.8 213.4,92.4 216.5,92.0 219.5,91.8 222.6,91.6 225.6,91.4 228.6,91.3 231.7,91.3 234.7,91.4 237.8,91.5 240.8,91.7 243.8,92.0 246.9,92.4 249.9,92.8 253.0,93.3 256.0,93.9 259.0,94.6 262.1,95.4 265.1,96.2 268.2,97.2 271.2,98.2 274.2,99.4 277.3,100.6 280.3,101.9 283.4,103.4 286.4,104.9 289.4,106.6 292.5,108.3 295.5,110.2 298.6,112.2 301.6,114.3 304.6,116.5 307.7,118.8 310.7,121.3 313.8,123.9 316.8,126.6 319.8,129.4 322.9,132.3 325.9,135.4 329.0,138.6 332.0,142.0" fill="none" stroke="#3c7a3a" stroke-width="1.8"/><polyline points="28.0,142.0 31.0,142.0 34.1,142.0 37.1,142.0 40.2,142.0 43.2,142.0 46.2,142.0 49.3,142.0 52.3,141.9 55.4,141.9 58.4,141.9 61.4,141.8 64.5,141.8 67.5,141.7 70.6,141.7 73.6,141.6 76.6,141.5 79.7,141.4 82.7,141.3 85.8,141.2 88.8,141.1 91.8,140.9 94.9,140.8 97.9,140.6 101.0,140.4 104.0,140.2 107.0,140.0 110.1,139.8 113.1,139.5 116.2,139.2 119.2,138.9 122.2,138.6 125.3,138.3 128.3,137.9 131.4,137.5 134.4,137.1 137.4,136.7 140.5,136.2 143.5,135.7 146.6,135.2 149.6,134.7 152.6,134.1 155.7,133.6 158.7,132.9 161.8,132.3 164.8,131.6 167.8,130.9 170.9,130.2 173.9,129.4 177.0,128.6 180.0,127.8 183.0,126.9 186.1,126.0 189.1,125.0 192.2,124.0 195.2,123.0 198.2,122.0 201.3,120.9 204.3,119.8 207.4,118.6 210.4,117.4 213.4,116.1 216.5,114.8 219.5,113.5 222.6,112.1 225.6,110.7 228.6,109.2 231.7,107.7 234.7,106.2 237.8,104.5 240.8,102.9 243.8,101.2 246.9,99.4 249.9,97.7 253.0,95.8 256.0,93.9 259.0,92.0 262.1,90.0 265.1,87.9 268.2,85.8 271.2,83.6 274.2,81.4 277.3,79.1 280.3,76.8 283.4,74.4 286.4,72.0 289.4,69.5 292.5,66.9 295.5,64.3 298.6,61.6 301.6,58.9 304.6,56.1 307.7,53.2 310.7,50.3 313.8,47.3 316.8,44.3 319.8,41.1 322.9,38.0 325.9,34.7 329.0,31.4 332.0,28.0" fill="none" stroke="#8a4fa0" stroke-width="1.8"/><rect x="28" y="178" width="10" height="3" fill="#b4441c"/><text x="42" y="182">B₀ = (1−t)³</text><rect x="110" y="178" width="10" height="3" fill="#1f5f8b"/><text x="124" y="182">B₁ = 3(1−t)²t</text><rect x="192" y="178" width="10" height="3" fill="#3c7a3a"/><text x="206" y="182">B₂ = 3(1−t)t²</text><rect x="274" y="178" width="10" height="3" fill="#8a4fa0"/><text x="288" y="182">B₃ = t³</text></svg><figcaption>Fig. 9 — The four cubic Bernstein basis functions on [0, 1].</figcaption></figure>
+</div>
+<p><b>Derivative and the C¹ condition.</b> Differentiating gives B′(t) = 3(1−t)²(P₁ − P₀) + 6(1−t)t(P₂ − P₁) + 3t²(P₃ − P₂), so B′(0) = 3(P₁ − P₀) and B′(1) = 3(P₃ − P₂). In my piecewise curve the control list is [K₀, H, H, K₁, H, H, K₂, H, H, K₃]: 10 points and 3 segments, where segment i uses points 3i…3i+3. At an interior knot K = P<sub>3i</sub> the left segment ends with tangent 3(K − P<sub>3i−1</sub>) and the right one starts with 3(P<sub>3i+1</sub> − K). C¹ continuity means these are equal:</p>
+<div class="eq">P<sub>3i+1</sub> − K = K − P<sub>3i−1</sub> &nbsp;&nbsp;⇔&nbsp;&nbsp; P<sub>3i+1</sub> = 2K − P<sub>3i−1</sub></div>
+<p>So the two handles must be opposite each other and the same length. <span class="m">enforceC1()</span> applies this after every drag: when I drag one handle, the handle on the other side of the joint is mirrored, and when I drag a knot, both its handles move with it. The read-out shows the C¹ residual at both joints, which stays at about 10⁻⁴ (the rounding of the stored coordinates). <b>de Casteljau</b> is implemented separately: it repeatedly linearly interpolates neighbouring points at t until one point is left, and the three intermediate levels are drawn for the segment that contains the global parameter t (light blue, green and orange in Fig. 10). The tests check that its last point equals B(t).</p>
+<div class="two">
+<figure><img src="../figures/fig_d_curve.jpg"><figcaption>Fig. 10 — My traced shape: the upper outline of the melon with 3 C¹ Bézier segments; knots are round, handles square, plus the de Casteljau construction at t = 0.42 and the arrow riding the curve.</figcaption></figure>
+<figure><img src="../figures/fig_d_catmull.jpg"><figcaption>Fig. 11 — Catmull–Rom spline through the same four knots. It passes exactly through every knot; tangent at a knot = (P<sub>i+1</sub> − P<sub>i−1</sub>)/2.</figcaption></figure>
+</div>
+<p><b>Second curve family, interaction, animation, export.</b> For the second family I chose the uniform Catmull–Rom spline, C(t) = ½[2P₁ + (P₂ − P₀)t + (2P₀ − 5P₁ + 4P₂ − P₃)t² + (−P₀ + 3P₁ − 3P₂ + P₃)t³]. At the two ends I repeat the end knot as its own neighbour. Control points live in normalised painting coordinates. A mouse click becomes a ray built from the camera basis (u, v, w, fov), and the ray is intersected with the plane z = 0, so points can be placed and dragged in the plane of the painting from any camera angle. “Place new curve” only accepts 10 or more points (at least three segments) and trims the list to 3n + 1. A small cone rides the curve: it is translated to C(t) and rotated by atan2 of the tangent. The tangent first has to be scaled by the painting’s width and height, because the normalised coordinates stretch x and y differently. “Export JSON” downloads <span class="m">curve.json</span> (Appendix A).</p>
+
+<h2>6 · Bonus work</h2>
+<ul>
+<li><b>Least-squares Bézier fit.</b> Shift-dragging on the painting records a freehand stroke. I fix P₀ and P₃ to the first and last samples and give the samples chord-length parameters t<sub>i</sub>. Minimising Σ‖B(t<sub>i</sub>) − s<sub>i</sub>‖² over P₁, P₂ gives the 2 × 2 normal equations [ΣB₁² ΣB₁B₂; ΣB₁B₂ ΣB₂²]·[P₁; P₂] = [ΣB₁q<sub>i</sub>; ΣB₂q<sub>i</sub>] with q<sub>i</sub> = s<sub>i</sub> − B₀P₀ − B₃P₃. For the stroke along the slice in Fig. 12 the fit is P₁ = (0.372, 0.234), P₂ = (0.634, 0.163) (cyan).</li>
+<li><b>Surface of revolution.</b> The sampled curve becomes a profile (x along the trace, radius = height above the lower end point) that is swept 48 times around the x axis. Its normals come from the profile tangent. Swept from the melon outline, the result is a small 3D melon on the table, and it is rebuilt whenever the curve changes.</li>
+<li><b>Camera matched to the painting.</b> In the painting the horizon (eye level) is just above the melon’s top, the table top is seen from slightly above, and the melon shows almost no perspective distortion. That suggests a viewer standing at a normal distance and looking roughly straight at the canvas. So the “Painting match” viewpoint puts the eye on the painting’s centre axis, slightly above its centre (pitch 0.06 rad), with a narrow fov of 34° and the camera 5.4 units away. From there the painting fills the view without keystone distortion, and the front edge of my 3D table continues the painted table edge (Fig. 1).</li>
+<li><b>Quaternion orbit with slerp.</b> The orientation is q = R<sub>y</sub>(yaw) ⊗ R<sub>x</sub>(−pitch), with eye = target + q·(0, 0, d) and up = q·(0, 1, 0). The viewpoint buttons slerp between orientations over 1.1 s, flipping one quaternion when their dot product is negative so the camera takes the short way round.</li>
+<li><b>Curve evaluated in a compute shader.</b> One invocation per sample evaluates the Bézier point and tangent in WGSL and writes two offset vertices into a storage buffer that is also bound as the vertex buffer. The ribbon is then drawn as one triangle strip without the CPU touching the samples (yellow ribbon in Fig. 12).</li>
+</ul>
+
+<h2>7 · Part E — Integration, interface and performance</h2>
+<div class="side">
+<div>
+<p>Everything is one page. The code is split into <span class="m">math/</span> (my maths), <span class="m">scene/</span> (nodes, meshes, curve model), <span class="m">render/</span> (device, pipelines, shaders, compute ribbon) and <span class="m">ui/</span> (panel, HUD, orbit, picking). The panel has a section per Part, view switching (inset, split, main only, inspection only), “Reset scene” (also <span class="m">R</span>), and toggles for every debug drawing (node axes, frustum, grid, control polygon, de Casteljau, control points). The HUD shows frame time, the CPU time of my frame code, vertices submitted per frame and draw calls. The README lists every control.</p>
+<p>The renderer gives every draw its own 256-byte slot in one uniform buffer, selected with a dynamic offset, so a frame needs a single <span class="m">writeBuffer</span> for all MVPs. The painting is an <span class="m">rgba8unorm-srgb</span> texture and lighting is done in linear space. Output is encoded by an sRGB view of the canvas, or by the shader when a browser does not offer that view.</p>
+</div>
+<figure><img src="../figures/fig_bonus.jpg"><figcaption>Fig. 12 — Bonus features together: compute-shader ribbon (yellow), least-squares fit of a freehand stroke (cyan) and the surface of revolution on the table.</figcaption></figure>
+</div>
+<p><b>Measured frame times</b> on a MacBook Air, <b>Apple M4 (10-core GPU, Metal 3)</b>, macOS 15.5, Chrome 157, canvas 2560 × 1900 device pixels, averaged over 60 frames:</p>
+<table>
+<tr><th>Configuration</th><th>frame (ms)</th><th>CPU per frame (ms)</th><th>vertices / frame</th><th>draw calls</th></tr>
+<tr><td>Main view only, perspective</td><td class="n">16.67</td><td class="n">0.68 (max 0.90)</td><td class="n">8,976</td><td class="n">18</td></tr>
+<tr><td>Main + inspection inset (default)</td><td class="n">16.70</td><td class="n">0.72 (max 0.90)</td><td class="n">18,012</td><td class="n">40</td></tr>
+<tr><td>Split view + node axes</td><td class="n">16.67</td><td class="n">0.76 (max 1.00)</td><td class="n">18,216</td><td class="n">40</td></tr>
+<tr><td>Split + axes + sweep + GPU ribbon + fit</td><td class="n">16.67</td><td class="n">0.76 (max 0.90)</td><td class="n">73,556</td><td class="n">44</td></tr>
+</table>
+<p>The frame time is locked to the 60 Hz display (vsync), so the more useful number is my own CPU time per frame: under 1 ms in every configuration. The GPU work is tiny, as even the heaviest setup submits about 74 k vertices. Most of the vertex count comes from the surface of revolution (3 × 32 × 48 quads) and from drawing every mesh twice when the inspection view is visible.</p>
+
+<h2>8 · What went wrong and how I found it</h2>
+<ul>
+<li><b>Black screen when the GPU ribbon was switched on.</b> No exception was thrown. Setting <span class="m">device.onuncapturederror</span> showed “Invalid BindGroup”. The output buffer size was computed with <span class="m">256 / 3</span> control points, which is not an integer, so the storage binding was not a multiple of 4 bytes. I fixed it with <span class="m">floor((n − 1)/3)</span> segments.</li>
+<li><b>Clicked points landing in the wrong place.</b> Picking used <span class="m">event.offsetX</span>, which did not match the canvas in every case, so placed points ended up shifted towards the top-left corner. Computing the position from <span class="m">clientX − getBoundingClientRect().left</span>, scaled to device pixels, fixed it.</li>
+<li><b>Picking tests failing for a strange reason.</b> In a background tab <span class="m">requestAnimationFrame</span> is throttled, so my camera matrices were a few frames old and the rays missed the painting. This was not a bug in the app, but it took me a while to see that I was testing with a stale camera.</li>
+<li><b>The least-squares fit test failed</b> with an error of 0.059 against my first tolerance of 0.02. A single chord-length parametrisation does not match the true Bézier parameter, so a perfect fit is not expected. I relaxed the tolerance to 0.1 and noted that reparametrising (Newton steps on t<sub>i</sub>) would improve it.</li>
+<li><b>Requirement checks.</b> When I went through the handout again I found three gaps. The axes debug mode skipped the root and the frame nodes (the handout says <i>each</i> node). Placing a curve could leave fewer than three segments. And I relied on an sRGB canvas view, which not every browser has to support. I fixed all three; the sRGB fallback can be forced with <span class="m">?srgb=manual</span>.</li>
+<li><b>The swept surface was huge</b> and sat right in front of the camera, because I scaled it by the trace length in normalised units. I rescaled it to world units and moved it next to the plate.</li>
+</ul>
+
+<div class="appendix">
+<h2>Appendix A · Exported curve (<span class="m">curve.json</span>)</h2>
+<pre class="small">{
+  "painting": {
+    "artist": "Şeker Ahmed Paşa",
+    "title": "Kavunlu Natürmort",
+    "collection": "Sakıp Sabancı Museum"
+  },
+  "coordinates": "normalised painting coordinates: (0,0) = bottom-left, (1,1) = top-right",
+  "curveType": "piecewise cubic Bezier",
+  "segments": 3,
+  "continuity": "C1: handles mirrored about every interior knot (P[k+1] = 2 P[k] - P[k-1])",
+  "layout": "knots at indices 0, 3, 6, ...; segment i uses controlPoints[3i .. 3i+3]",
+  "controlPoints": [
+    { "i": 0, "x": 0.2722, "y": 0.745, "role": "knot" },
+    { "i": 1, "x": 0.3083, "y": 0.8765, "role": "handle" },
+    { "i": 2, "x": 0.4306, "y": 0.9004, "role": "handle" },
+    { "i": 3, "x": 0.5556, "y": 0.8924, "role": "knot" },
+    { "i": 4, "x": 0.6806, "y": 0.8845, "role": "handle" },
+    { "i": 5, "x": 0.8125, "y": 0.8367, "role": "handle" },
+    { "i": 6, "x": 0.8583, "y": 0.7211, "role": "knot" },
+    { "i": 7, "x": 0.9042, "y": 0.6056, "role": "handle" },
+    { "i": 8, "x": 0.9, "y": 0.5299, "role": "handle" },
+    { "i": 9, "x": 0.875, "y": 0.4582, "role": "knot" }
+  ],
+  "exportedAt": "default trace (re-export your own from the app)"
+}</pre>
+
+<h2>Appendix B · Use of AI tools</h2>
+<p>As required by section 4 of the handout, this is a complete list of the AI tools I used.</p>
+<table>
+<tr><th>Tool</th><th>What I asked for</th><th>What I kept</th></tr>
+<tr><td>Claude Code (Anthropic), in the Claude desktop app</td>
+<td>To build the project from the handout and the course’s explorer page: the WebGPU renderer, scene graph, UI, picking and curve editing, the unit tests and README, and later, after the deadline had passed, the matrix, camera and curve functions in <span class="m">src/math/</span> and the bonus features. I also asked it to check the result against every requirement, to rewrite the code comments in my own voice and to draft this report from screenshots and measurements taken in the running app.</td>
+<td>All of the generated code and the report draft, unchanged.</td></tr>
+</table>
+</div>
+
+</body>
+</html>

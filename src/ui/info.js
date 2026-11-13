@@ -1,4 +1,5 @@
-// HUD (top-left) and the matrix read-out panel (bottom-left).
+// The HUD (top-left) and the matrix read-out panel (bottom-left). I use these
+// read-outs for the screenshots in my report.
 import { fmtMat, fmtV, sideBySide } from './hud.js';
 import { transformPoint } from '../math/mat4.js';
 
@@ -8,7 +9,8 @@ export function renderHud(app) {
   const ms = app.frameMs.length ? app.frameMs.reduce((a, b) => a + b, 0) / app.frameMs.length : 0;
   const ai = r.adapterInfo || {};
   const gpu = [ai.vendor, ai.architecture, ai.description].filter(Boolean).join(' · ') || 'unknown GPU';
-  let s = `frame ${ms.toFixed(2)} ms  (${ms ? (1000 / ms).toFixed(0) : '–'} fps)${app.paused ? '  [paused]' : ''}\n`;
+  const cpu = app.cpuMs.length ? app.cpuMs.reduce((a, b) => a + b, 0) / app.cpuMs.length : 0;
+  let s = `frame ${ms.toFixed(2)} ms  (${ms ? (1000 / ms).toFixed(0) : '–'} fps)  cpu ${cpu.toFixed(2)} ms${app.paused ? '  [paused]' : ''}\n`;
   s += `vertices/frame ${r.stats.vertices.toLocaleString()}   draw calls ${r.stats.draws}\n`;
   s += `GPU ${gpu}\n`;
   s += `canvas ${r.canvas.width}×${r.canvas.height}  view: ${st.viewMode}\n`;

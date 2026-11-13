@@ -1,10 +1,10 @@
-// Holds the traced curve and turns it into samples. All evaluation is done by
-// the functions in src/math/curves.js; this file only decides which
-// segment a global parameter falls into and loops over samples.
+// Holds my traced curve and turns it into samples. The actual evaluation is in
+// src/math/curves.js; here I only work out which segment a global parameter
+// falls into and loop over the samples.
 import * as C from '../math/curves.js';
 
-// Default trace: the upper outline of the melon in Kavunlu Natürmort, in image
-// pixels (720 × 502, y down). Indices 0, 3, 6, 9 are knots; handles around
+// My default trace: the upper outline of the melon in Kavunlu Natürmort. I read
+// these off the image in pixels (720 × 502, y down). Indices 0, 3, 6, 9 are knots; handles around
 // each interior knot are already mirrored, so the curve starts out C¹.
 const PIXEL_TRACE = [
   [196, 128], [222, 62], [310, 50],

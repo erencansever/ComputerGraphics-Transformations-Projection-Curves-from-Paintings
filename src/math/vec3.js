@@ -1,5 +1,5 @@
-// Small 3-vector helpers (plain arrays [x, y, z]). Not part of the graded maths,
-// just the vocabulary the rest of the code is written in.
+// Small 3-vector helpers on plain arrays [x, y, z]. I use these everywhere
+// (lookAt, picking, frustum corners) so the bigger functions stay readable.
 export const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 export const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 export const scale = (a, s) => [a[0] * s, a[1] * s, a[2] * s];

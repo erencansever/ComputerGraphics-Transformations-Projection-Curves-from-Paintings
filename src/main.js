@@ -51,6 +51,7 @@ const app = {
   free: { samples: [], fit: null, active: false, error: '' },
   sweepKey: '',
   frameMs: [],
+  cpuMs: [], // my own JS time per frame (tick: animation, matrices, draw lists, encode)
   cams: {},
   views: {},
   errors: new Set(),
@@ -294,7 +295,10 @@ function frame(now) {
   app.last = now;
   app.errors.clear();
   try {
+    const t0 = performance.now();
     tick(dt);
+    app.cpuMs.push(performance.now() - t0);
+    if (app.cpuMs.length > 60) app.cpuMs.shift();
     app.fatal = null;
   } catch (e) {
     app.fatal = e instanceof TodoError ? `Rendering needs ${e.fn}` : e.message;

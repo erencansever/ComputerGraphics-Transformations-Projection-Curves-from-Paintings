@@ -1,11 +1,11 @@
-// Part B — scene graph node.
+// Part B — my scene-graph node.
 //
 // Every node stores only its LOCAL transform (relative to its parent).
-// Its WORLD matrix is computed by a depth-first traversal:
+// I compute the WORLD matrix with a depth-first traversal:
 //     world(node) = world(parent) · local(node)          (root: world = local)
-// `shape` is an extra matrix applied only when drawing this node's own mesh
+// `shape` is an extra matrix I only apply when drawing the node's own mesh
 // (e.g. stretching a unit cube into an arm). It is NOT inherited by children,
-// so scaling an arm does not squash the objects it carries.
+// otherwise scaling an arm would also squash the lamp head it carries.
 import { identity, multiply } from '../math/mat4.js';
 
 export class SceneNode {

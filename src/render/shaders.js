@@ -1,8 +1,8 @@
-// WGSL shaders. Every draw has its own 256-byte slot in one uniform buffer,
+// My WGSL shaders. Every draw has its own 256-byte slot in one uniform buffer,
 // selected with a dynamic offset:
-//   mvp    = P · V · M   (computed on the CPU with src/math/mat4.js)
-//   model  = M           (normals; the scene only uses uniform scales on lit
-//                         objects that matter, so the upper 3×3 is good enough)
+//   mvp    = P · V · M   (I compute it on the CPU with my mat4.js)
+//   model  = M           (for normals; the lit objects that matter only use
+//                         uniform scale, so the upper 3×3 is good enough)
 //   color  = base colour (linear)
 //   params = (useTexture, unlit, 0, 0)
 const UNIFORMS = /* wgsl */ `

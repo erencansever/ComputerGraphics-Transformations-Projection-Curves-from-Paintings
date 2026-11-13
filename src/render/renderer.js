@@ -1,11 +1,11 @@
-// WebGPU renderer: device setup, pipelines, buffers and the per-frame encode.
+// My WebGPU renderer: device setup, pipelines, buffers and the per-frame encode.
 //
-// Each frame the app hands over a list of VIEWS. A view is a viewport plus a
-// view-projection matrix and a list of DRAWS. Every draw gets its own slot in
-// one uniform buffer (mvp, model, colour, flags) addressed by a dynamic
-// offset, so the whole frame needs a single writeBuffer for its uniforms.
-// Views are encoded as separate render passes so each gets its own depth
-// clear (that is what makes the picture-in-picture inspection view work).
+// Every frame main.js hands me a list of VIEWS. A view is a viewport, a
+// view-projection matrix and a list of DRAWS. I give every draw its own slot
+// in one big uniform buffer (mvp, model, colour, flags) and pick it with a
+// dynamic offset, so a whole frame needs only one writeBuffer for uniforms.
+// Each view is its own render pass so it gets its own depth clear — that is
+// what makes the picture-in-picture inspection view work.
 import { MESH_WGSL, COLOR_WGSL, RIBBON_WGSL } from './shaders.js';
 import { multiply, identity } from '../math/mat4.js';
 

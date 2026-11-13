@@ -1,10 +1,10 @@
-// BONUS — evaluate the curve in a compute shader and draw it as a ribbon.
+// BONUS — I evaluate the curve in a compute shader and draw it as a ribbon.
 //
 // One invocation per curve sample: it evaluates the Bézier point and tangent
-// (WGSL from src/math/curves.wgsl.js), offsets ±halfWidth along the
-// in-plane normal and writes two vertices into a buffer that is ALSO bound as
-// a vertex buffer, so the ribbon is drawn as one triangle strip without the
-// CPU ever seeing the samples.
+// (my WGSL from src/math/curves.wgsl.js), offsets ±halfWidth along the
+// in-plane normal and writes two vertices into a buffer that I ALSO bind as a
+// vertex buffer. So the ribbon is drawn as one triangle strip and the CPU
+// never sees the samples.
 import { CURVES_WGSL } from '../math/curves.wgsl.js';
 
 const MAX_CTRL = 256;

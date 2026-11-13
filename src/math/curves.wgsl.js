@@ -1,10 +1,10 @@
 /**
  * BONUS — curve evaluation on the GPU.
  *
- * These two WGSL functions are pasted into the compute shader in
- * src/render/gpuRibbon.js, which evaluates every sample of the piecewise
- * Bézier in parallel and writes a tessellated ribbon straight into a vertex
- * buffer. Same formulas as bezier / bezierTangent in curves.js.
+ * I paste these two WGSL functions into the compute shader in
+ * src/render/gpuRibbon.js. It evaluates every sample of the piecewise Bézier
+ * in parallel and writes the ribbon straight into a vertex buffer. The
+ * formulas are the same as bezier / bezierTangent in curves.js.
  */
 export const WGSL_CURVES_IMPLEMENTED = true;
 
