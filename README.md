@@ -91,10 +91,3 @@ docs/REPORT_OUTLINE.md   what the PDF report must contain
 - Colour: the painting is an `rgba8unorm-srgb` texture and lighting is done in linear space. The output is encoded by an `-srgb` view of the canvas; if a browser does not offer that view, the fragment shaders encode sRGB themselves (the HUD shows which path is active, and `?srgb=manual` forces the fallback).
 - Curve coordinates: normalised painting coordinates, (0, 0) at bottom-left and (1, 1) at top-right.
 
-## Deliverables checklist
-
-- [x] All functions in `src/math/` implemented, `npm test` green
-- [ ] Trace your own shape and export it → replace `curve.json`
-- [ ] `report.pdf` in the repository root (see `docs/REPORT_OUTLINE.md`)
-- [x] Tag `project1-final`
-- [ ] Optional: demo video (≤ 3 min)
